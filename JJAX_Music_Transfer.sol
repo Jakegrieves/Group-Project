@@ -158,6 +158,8 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
         Listing[] memory result = new Listing[](count);
         uint256 index = 0;
         
+        // for loop is used to count the current number of active listings.
+        // It does this by seeing for check token ID, whether it has a corresponding listing. 
         for (uint256 i = 0; i < totalListings; i++) {
             if (fixedPriceListings[i].seller != address(0)) {
                 result[index] = fixedPriceListings[i];
@@ -175,7 +177,9 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
     function viewAuctions() public view returns (Auction[] memory) {
         uint256 totalAuctions = _tokenIdCounter.current();
         uint256 count = 0;
-
+        
+        // for loop is used to count the current number of active auctions.
+        // It does this by seeing for check token ID, whether it has a corresponding auction.
         for (uint256 i = 0; i < totalAuctions; i++) {
             if (auctions[i].seller != address(0)) {
                 count++;
