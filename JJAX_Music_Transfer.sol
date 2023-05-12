@@ -3,19 +3,19 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts@4.8.3/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts@4.8.3/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts@4.8.3/security/Pausable.sol";
+import "@openzeppelin/contracts@4.8.3/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts@4.8.3/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts@4.8.3/access/Ownable.sol";
 import "@openzeppelin/contracts@4.8.3/utils/Counters.sol";
 
-contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
+contract JJAX2 is ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
-    
+
     Counters.Counter private _tokenIdCounter;
-    
-    uint256 public MINT_PRICE = 0.05 ether;
-    uint256 public MAX_SUPPLY = 10000;
-    
-    // Listing type defined as an enumerator, FixedPrice and Auction.
+    uint256 public MINT_PRICE = 0 ether; //Cost of minting
+    uint256 public MAX_SUPPLY = 100; //total amount of NFTs allowed
+
+        // Listing type defined as an enumerator, FixedPrice and Auction.
     // Representing the two types of listings availavble when the 'createListing' function is called. 
     enum ListingType {FixedPrice, Auction}
     
@@ -243,43 +243,36 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
         return result;
     }
 
-
-
-
-
-
-
-
-
-    function _baseURI() internal pure override returns (string memory) {
-        return "XXXXX"; // will eventually be the IPFS URI 
-    }
-
-    function pause() public onlyOwner {  //Allows you to pause the contract (part of the standard)
-        _pause();
-    }
-
-    function unpause() public onlyOwner {
-        _unpause();
-    }
-
-    function safeMint(address to) public payable{ // Mint or create a NFT :)
+    function safeMint(address to, string memory uri) public payable {
         require(totalSupply() < MAX_SUPPLY,"No More Mintable Tokens.");//Total supply of tokens Cant make more then MAX_SUPPLY
         require(msg.value >= MINT_PRICE,"Not enough ether sent.");//Cost ether to mint a token
-        uint256 tokenId = _tokenIdCounter.current(); //Gives the token an ID
-        _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
+        uint256 tokenId = _tokenIdCounter.current(); //Gets token ID 
+        _tokenIdCounter.increment(); //Incrementes System token ID
+        _safeMint(to, tokenId); //Mints the new ID
+        _setTokenURI(tokenId, uri); //Associates the Token with a URI (link to metadata on IPFS)
     }
+
+    // The following functions are overrides required by Solidity.
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
-        whenNotPaused
         override(ERC721, ERC721Enumerable)
     {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    // The following functions are overrides required by Solidity.
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) { //Remove a Token
+        super._burn(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
 
     function supportsInterface(bytes4 interfaceId)
         public
