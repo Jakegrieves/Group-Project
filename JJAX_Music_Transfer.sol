@@ -70,7 +70,7 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
     // Function for creating a fixed price listing. 
     // The calling of the fucntion requires the user to justify ownership over thier NFT. 
     // Whether the token is already in either a fixed lisiting or auction is also checked, to avoid overwriting. 
-    function createFixedPriceListing(uint256 tokenId, uint256 price) public {
+    function createFixedPriceListing(uint256 tokenId, uint256 price) public checkAuction(tokenId) {
             require(ownerOf(tokenId) == msg.sender, "Only the owner can list a token.");
             require(fixedPriceListings[tokenId].seller == address(0), "Token already listed.");
             require(auctions[tokenId].seller == address(0), "Token is already in an auction.");
@@ -84,7 +84,7 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
         
     
     // A modifier that checks the state of the auction, so it can be ended automatically. 
-    modifier checkAuction(uint256 tokenId) {
+    modifier checkAuction(uint256 tokenId)  {
     Auction storage auction = auctions[tokenId];
     if (auction.hasStarted && block.timestamp >= auction.bidStartTime + auction.duration) {
         endAuction(tokenId);
@@ -97,7 +97,7 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
     // 'minPrice' serves as an initial bid, that has to be outbid in order actually start the auction. 
     // Creating an auction and defining 'minPrice' does NOT begin the auction timer. 
     // Whether the token is already in either a fixed lisiting or auction is also checked, to avoid overwriting. 
-    function createAuction(uint256 tokenId, uint256 minPrice, uint256 auctionDuration) public {
+    function createAuction(uint256 tokenId, uint256 minPrice, uint256 auctionDuration) public checkAuction(tokenId) {
         require(ownerOf(tokenId) == msg.sender, "Only the owner can list a token.");
         require(fixedPriceListings[tokenId].seller == address(0), "Token already listed.");
         require(auctions[tokenId].seller == address(0), "Token is already in an auction.");
@@ -118,7 +118,7 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
 
     // Function for buying ownership for a fixed lisiting specifically. 
     // Withdraw function is unnecessary as the contract transfers funds immediately after a trading transaction. 
-    function buyFixedPriceListing(uint256 tokenId) public payable {
+    function buyFixedPriceListing(uint256 tokenId) public payable checkAuction(tokenId){
         Listing storage listing = fixedPriceListings[tokenId];
         require(listing.seller != address(0), "Listing does not exist.");
         require(msg.value >= listing.price, "Not enough ether sent.");
