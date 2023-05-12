@@ -29,8 +29,8 @@ TODO:
 
 We currently have everything in place to mint and send tokens however there are a couple features missing.
 
-1) Listings: Users should be able to list and auction off these NFT tokens, This however should be fairly simple and can be done within the smart contract
-2) Uploading of JSON and File Data. This is more complex and may have to be done within the front end layer. I am currently using Pinata to upload to IPFS however we need a dedicated gateway in order to get full functionality, there are two options for this, either we can pay money and use a more expensive version of Pinata which gives us a gateway, or find a way around this. (Maybe NFT storage is a good idea for this) 
+1) Uploading of JSON and File Data. This is more complex and may have to be done within the front end layer. I am currently using Pinata to upload to IPFS however we need a dedicated gateway in order to get full functionality, there are two options for this, either we can pay money and use a more expensive version of Pinata which gives us a gateway, or find a way around this. (Maybe NFT storage is a good idea for this) 
+2) Write up on report 
 
 Currently users have to upload files to the IPFS through Pinata, However after completion the users are able to send NFTs to one another and the functionality works as intended. 
 
