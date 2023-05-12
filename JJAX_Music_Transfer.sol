@@ -32,12 +32,12 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
     struct Auction {
         uint256 tokenId;
         uint256 startTime;
+        uint256 bidStartTime;
         uint256 duration;
         uint256 highestBid;
         address highestBidder;
         address seller;
         bool hasStarted;
-        uint256 timeLeft;
     }
 
 
@@ -68,24 +68,37 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
         }
         
     
+    // A modifier that checks the state of the auction, so it can be ended automatically. 
+    modifier checkAuction(uint256 tokenId) {
+    Auction storage auction = auctions[tokenId];
+    if (auction.hasStarted && block.timestamp >= auction.bidStartTime + auction.duration) {
+        endAuction(tokenId);
+    }
+    _;
+}
+    
+    
     // Function for creating a auction style listing of an NFT. 
     // 'minPrice' serves as an initial bid, that has to be outbid in order actually start the auction. 
     // Creating an auction and defining 'minPrice' does NOT begin the auction timer. 
     // Whether the token is already in either a fixed lisiting or auction is also checked, to avoid overwriting. 
     function createAuction(uint256 tokenId, uint256 minPrice, uint256 auctionDuration) public {
-            require(ownerOf(tokenId) == msg.sender, "Only the owner can list a token.");
-            require(fixedPriceListings[tokenId].seller == address(0), "Token already listed.");
-            require(auctions[tokenId].seller == address(0), "Token is already in an auction.");
+        require(ownerOf(tokenId) == msg.sender, "Only the owner can list a token.");
+        require(fixedPriceListings[tokenId].seller == address(0), "Token already listed.");
+        require(auctions[tokenId].seller == address(0), "Token is already in an auction.");
 
-            auctions[tokenId] = Auction({
-                tokenId: tokenId,
-                startTime: 0, 
-                duration: auctionDuration, 
-                highestBid: minPrice, 
-                highestBidder: address(0),
-                seller: msg.sender
-            });
-        }
+        auctions[tokenId] = Auction({
+            tokenId: tokenId,
+            startTime: block.timestamp, 
+            bidStartTime: 0,
+            duration: auctionDuration, 
+            highestBid: minPrice, 
+            highestBidder: address(0),
+            seller: msg.sender,
+            hasStarted : false
+        });
+    }
+
 
 
     // Function for buying ownership for a fixed lisiting specifically. 
@@ -103,21 +116,18 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
 
     // Function for placing a bid in an auction based listing. (Taking the place of highestBid). 
     // Once this function is used for the first time in an auction listing, the pre-defined timer starts. 
-    function bidOnAuction(uint256 tokenId) public payable {
+    function bidOnAuction(uint256 tokenId) public payable checkAuction(tokenId) {
         Auction storage auction = auctions[tokenId];
         require(auction.seller != address(0), "Auction does not exist.");
-        require(block.timestamp < auction.startTime + auction.duration, "Auction has ended.");
+        require(!auction.hasStarted || block.timestamp < auction.bidStartTime + auction.duration, "Auction has ended.");
         require(msg.value > auction.highestBid, "Bid must be higher than the current highest bid.");
 
-        if (auction.startTime != 0) {
+        if (auction.hasStarted) {
             payable(auction.highestBidder).transfer(auction.highestBid);
         } else {
-            auction.startTime = block.timestamp;
-            auction.hasStarted = true; // The auction has now started
+            auction.bidStartTime = block.timestamp;
+            auction.hasStarted = true;
         }
-
-        // Update the time left
-        auction.timeLeft = auction.duration - (block.timestamp - auction.startTime);
 
         auction.highestBid = msg.value;
         auction.highestBidder = msg.sender;
@@ -127,19 +137,18 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
 
     // Function specifying the logic of an auction once the timer is up. 
     // If no one bids and the highest bidder is the still the initial lister, then they will retain ownership. 
-    function endAuction(uint256 tokenId) public {
+    function endAuction(uint256 tokenId) internal {
         Auction storage auction = auctions[tokenId];
         require(auction.seller != address(0), "Auction does not exist.");
-        require(block.timestamp >= auction.startTime + auction.duration, "Auction has not ended.");
+        require(auction.hasStarted && block.timestamp >= auction.bidStartTime + auction.duration, "Auction has not ended.");
 
-            if (auction.highestBidder != address(0)) {
-                _transfer(auction.seller, auction.highestBidder, tokenId);
-                payable(auction.seller).transfer(auction.highestBid);
-            }
-
-            // Remove the auction from the market. 
-            delete auctions[tokenId];
+        if (auction.highestBidder != address(0)) {
+            _transfer(auction.seller, auction.highestBidder, tokenId);
+            payable(auction.seller).transfer(auction.highestBid);
         }
+
+        delete auctions[tokenId];
+    }
     
     
     
