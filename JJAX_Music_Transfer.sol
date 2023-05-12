@@ -39,6 +39,21 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
         address seller;
         bool hasStarted;
     }
+    
+    
+    // timeLeft has to be calculated dynamically, so having it tied to the original Auction sturct would be ineffective. 
+    // Using a seperate struct for the viewing of currently active auctions would make things easier. 
+   struct AuctionView {
+    uint256 tokenId;
+    uint256 startTime;
+    uint256 bidStartTime;
+    uint256 duration;
+    uint256 highestBid;
+    address highestBidder;
+    address seller;
+    bool hasStarted;
+    uint256 timeLeft;
+}
 
 
     // Mappings to each respective listing and purchasing / bidding processes. 
@@ -108,9 +123,10 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
         require(listing.seller != address(0), "Listing does not exist.");
         require(msg.value >= listing.price, "Not enough ether sent.");
 
+        payable(listing.seller).transfer(listing.price);
         _transfer(listing.seller, msg.sender, tokenId);
 
-        delete fixedPriceListings[tokenId]; // Once the listing is sold, it is taken off the market. 
+        delete fixedPriceListings[tokenId];
     }
 
 
@@ -124,13 +140,15 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
 
         if (auction.hasStarted) {
             payable(auction.highestBidder).transfer(auction.highestBid);
-        } else {
-            auction.bidStartTime = block.timestamp;
-            auction.hasStarted = true;
         }
 
         auction.highestBid = msg.value;
         auction.highestBidder = msg.sender;
+
+        if (!auction.hasStarted) {
+            auction.bidStartTime = block.timestamp;
+            auction.hasStarted = true;
+        }
     }
 
 
@@ -183,38 +201,48 @@ contract JJAXMusic is ERC721, ERC721Enumerable, Pausable, Ownable {
     // A function for visualising current auctions so users are able to see and buy fixed listings. 
     // A for loop is used to the function will not return an array with any empty values, as some NFTS may not have an associated listing.
     // This fucntion also provides information about whether certain auctions have started yet and how long is left for each auction. 
-    function viewAuctions() public view returns (Auction[] memory) {
+    // The struct AuctionView is implemented to account for the dynamic calcuation of 'timeLeft'.
+    function viewAuctions() public view returns (AuctionView[] memory) {
         uint256 totalAuctions = _tokenIdCounter.current();
         uint256 count = 0;
         
-        // for loop is used to count the current number of active auctions.
-        // It does this by seeing for check token ID, whether it has a corresponding auction.
         for (uint256 i = 0; i < totalAuctions; i++) {
             if (auctions[i].seller != address(0)) {
                 count++;
             }
         }
 
-        Auction[] memory result = new Auction[](count);
+        AuctionView[] memory result = new AuctionView[](count);
         uint256 index = 0;
-
+        
         for (uint256 i = 0; i < totalAuctions; i++) {
             if (auctions[i].seller != address(0)) {
                 Auction memory auction = auctions[i];
+                uint256 timeLeft = 0;
 
-                // If the auction has started, update the time left
+                // If the auction has started, calculate time left
                 if (auction.hasStarted) {
-               
-                    auction.timeLeft = auction.duration - (block.timestamp - auction.startTime);
+                    timeLeft = auction.duration - (block.timestamp - auction.startTime);
                 }
 
-                result[index] = auction;
-                index++; // incrementing index by 1. 
+                result[index] = AuctionView({
+                    tokenId: auction.tokenId,
+                    startTime: auction.startTime,
+                    bidStartTime: auction.bidStartTime,
+                    duration: auction.duration,
+                    highestBid: auction.highestBid,
+                    highestBidder: auction.highestBidder,
+                    seller: auction.seller,
+                    hasStarted: auction.hasStarted,
+                    timeLeft: timeLeft
+                });
+                index++; 
             }
         }
 
         return result;
     }
+
 
 
 
