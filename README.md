@@ -1,9 +1,10 @@
 # Group-Project
-JJAX Music Transfer
+Backend finished please use the 
 
-JJAX 2 Smart Contract:
+JJAX_Music_Transfer.sol
 
 Users can mint a NFT Smart token with the SafeMint function taking in two values, an address and the URI linking to a JSON file on the IPFS system.
+We also have the auction functionality :) thanks andrew
 
 This JSON file should be of the following format
 
