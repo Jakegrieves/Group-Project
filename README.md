@@ -3,6 +3,10 @@ Backend finished please use the :
 
 JJAX_Music_Transfer.sol
 
+Frontend finished please use the :
+
+JJAX-DApp.zip
+
 For the report, please use :
 
 Group_Project.pdf
