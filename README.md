@@ -26,4 +26,4 @@ Chain ID: 5
 Currency symbol: ETH
 Block explorer URL: https://goerli.etherscan.io/
 
-
+Local sever hosted application link - https://jjax-da-2btfvmj4s-xinruihe199-gmailcom.vercel.app/
